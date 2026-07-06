@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2 — Android Internals & Linux Foundation | Android Fundamentals</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0B0F19;--bg2:#0F1629;--bg3:#141B2D;--bg4:#1A2340;
+--card:#141B2D;--card2:#1A2340;--card3:#1E2950;
+--border:#1E2D50;--border2:#2A3A60;
+--text:#E8EAF0;--text2:#A0A8C0;--text3:#6B7394;
+--accent:#00D4FF;--accent2:#0099FF;--accent3:#0066CC;
+--grad1:linear-gradient(135deg,#00D4FF,#0099FF);
+--grad2:linear-gradient(135deg,#00FF88,#00D4FF);
+--grad3:linear-gradient(135deg,#8B5CF6,#EC4899);
+--grad4:linear-gradient(135deg,#F59E0B,#EF4444);
+--green:#00FF88;--red:#FF4466;--yellow:#FFD700;--orange:#FF8C00;--purple:#8B5CF6;--pink:#EC4899;
+--radius:12px;--radius2:16px;
+--shadow:0 4px 24px rgba(0,0,0,0.3);--shadow2:0 8px 48px rgba(0,0,0,0.4);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(11,15,25,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-size:1.1rem;font-weight:700;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-logo span{color:var(--text3);-webkit-text-fill-color:var(--text3);font-weight:400;margin-left:.5rem;font-size:.85rem}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:.85rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--accent)}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.5rem;cursor:pointer}
+.nav-mobile{display:none;position:fixed;top:64px;left:0;right:0;bottom:0;background:rgba(11,15,25,0.98);backdrop-filter:blur(20px);padding:2rem;flex-direction:column;gap:1.5rem;overflow-y:auto}
+.nav-mobile.open{display:flex}
+.nav-mobile a{color:var(--text2);text-decoration:none;font-size:1rem;font-weight:500;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:6rem 2rem 4rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(0,212,255,0.08) 0%,transparent 50%),radial-gradient(circle at 70% 30%,rgba(139,92,246,0.06) 0%,transparent 50%);animation:heroBg 20s ease-in-out infinite}
+@keyframes heroBg{0%,100%{transform:translate(0,0)}50%{transform:translate(-2%,1%)}}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 .grad{background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.2rem;color:var(--text2);max-width:700px;margin:0 auto 2rem;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:.5rem 1.2rem;font-size:.85rem;color:var(--accent);margin-bottom:2rem;position:relative}
+.hero-btns{display:flex;gap:1rem;justify-content:center;position:relative}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;border-radius:var(--radius);font-size:.95rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;transition:all .3s}
+.btn-primary{background:var(--grad1);color:#000;box-shadow:0 4px 20px rgba(0,212,255,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(0,212,255,0.4)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.section{padding:6rem 2rem;max-width:1200px;margin:0 auto}
+.section-label{display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);border-radius:999px;padding:.4rem 1rem;font-size:.8rem;font-weight:600;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em}
+.section h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;margin-bottom:1rem;line-height:1.2}
+.section h2 .grad{background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.section h3{font-size:1.5rem;font-weight:700;margin:2.5rem 0 1rem;color:var(--text)}
+.section h4{font-size:1.15rem;font-weight:600;margin:1.5rem 0 .75rem;color:var(--accent)}
+.section>p{color:var(--text2);font-size:1.05rem;max-width:800px;margin-bottom:1.5rem}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:4rem 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;transition:all .3s}
+.card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;margin:1.5rem 0}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin:1.5rem 0}
+.card .icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:1rem;background:rgba(0,212,255,0.1)}
+.card h4{margin-top:0;color:var(--text)}
+.card p,.card li{color:var(--text2);font-size:.95rem}
+.card ul{list-style:none;padding:0;margin:.5rem 0 0}
+.card ul li{padding:.3rem 0;padding-left:1.2rem;position:relative}
+.card ul li::before{content:'\25B8';position:absolute;left:0;color:var(--accent)}
+.box{border-radius:var(--radius);padding:1.25rem 1.5rem;margin:1rem 0;font-size:.95rem;border:1px solid}
+.box-blue{background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);color:var(--accent)}
+.box-green{background:rgba(0,255,136,0.06);border-color:rgba(0,255,136,0.2);color:var(--green)}
+.box-red{background:rgba(255,68,102,0.06);border-color:rgba(255,68,102,0.2);color:var(--red)}
+.box-yellow{background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.2);color:var(--yellow)}
+.box-purple{background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.2);color:var(--purple)}
+.box-title{font-weight:700;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.85rem;line-height:1.6;margin:1rem 0;color:var(--text2);position:relative}
+pre .cmd{color:var(--green)}
+pre .flag{color:var(--accent)}
+pre .path{color:var(--yellow)}
+pre .comment{color:var(--text3);font-style:italic}
+code{font-family:'JetBrains Mono',monospace;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.15rem .4rem;font-size:.85rem;color:var(--accent)}
+pre code{background:none;border:none;padding:0}
+.fc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;margin:1.5rem 0;display:flex;flex-direction:column;align-items:center;gap:1rem;overflow-x:auto}
+.fc-title{font-weight:700;color:var(--text);font-size:1rem;margin-bottom:.5rem}
+.fc-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:center}
+.fc-box{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem 1.2rem;font-size:.85rem;font-weight:500;text-align:center;min-width:100px;transition:all .3s}
+.fc-box:hover{border-color:var(--accent);transform:translateY(-2px)}
+.fc-box.highlight{border-color:var(--accent);background:rgba(0,212,255,0.1)}
+.fc-box.red{border-color:var(--red);background:rgba(255,68,102,0.1)}
+.fc-box.green{border-color:var(--green);background:rgba(0,255,136,0.1)}
+.fc-box.yellow{border-color:var(--yellow);background:rgba(255,215,0,0.1)}
+.fc-box.purple{border-color:var(--purple);background:rgba(139,92,246,0.1)}
+.fc-arrow{color:var(--text3);font-size:1.2rem;flex-shrink:0}
+.fc-arrow-down{color:var(--text3);font-size:1.2rem}
+.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+.tab-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1.2rem;font-size:.85rem;font-weight:500;color:var(--text2);cursor:pointer;transition:all .2s;font-family:inherit}
+.tab-btn:hover{border-color:var(--border2);color:var(--text)}
+.tab-btn.active{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent)}
+.tab-content{display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin:.5rem 0 1.5rem;animation:fadeIn .3s ease}
+.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sim{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;margin:1.5rem 0}
+.sim-title{font-weight:700;font-size:1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.sim-title .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.15);font-size:1rem}
+.sim-steps{display:flex;flex-direction:column;gap:.75rem}
+.sim-step{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:1rem;font-size:.9rem;transition:all .3s;opacity:0.3}
+.sim-step.active{opacity:1;border-color:var(--accent);background:rgba(0,212,255,0.05)}
+.sim-step .num{width:28px;height:28px;border-radius:50%;background:var(--bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;color:var(--text3)}
+.sim-step.active .num{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.1)}
+.sim-step .txt{flex:1}
+.sim-step .txt strong{color:var(--text);font-weight:600}
+.sim-step .txt span{color:var(--text2)}
+.sim-controls{display:flex;gap:.75rem;margin-top:1.25rem}
+.sim-btn{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem 1.2rem;font-size:.85rem;font-weight:500;color:var(--text2);cursor:pointer;transition:all .2s;font-family:inherit}
+.sim-btn:hover{border-color:var(--accent);color:var(--accent)}
+.table-wrap{overflow-x:auto;margin:1rem 0;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg3);font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text2);text-align:left;padding:.75rem 1rem;border-bottom:1px solid var(--border)}
+td{padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:.9rem;color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,212,255,0.03)}
+.quiz{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;margin:1.5rem 0}
+.quiz h4{margin-top:0;color:var(--text);margin-bottom:1rem}
+.quiz-q{margin-bottom:1.5rem}
+.quiz-q p{font-weight:600;color:var(--text);margin-bottom:.75rem;font-size:.95rem}
+.quiz-opts{display:flex;flex-direction:column;gap:.5rem}
+.quiz-opt{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem 1rem;cursor:pointer;font-size:.9rem;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:.75rem}
+.quiz-opt:hover{border-color:var(--border2);color:var(--text)}
+.quiz-opt.selected{border-color:var(--accent);background:rgba(0,212,255,0.08);color:var(--text)}
+.quiz-opt.correct{border-color:var(--green);background:rgba(0,255,136,0.08);color:var(--green)}
+.quiz-opt.wrong{border-color:var(--red);background:rgba(255,68,102,0.08);color:var(--red)}
+.quiz-opt .letter{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;flex-shrink:0}
+.quiz-opt.selected .letter{border-color:var(--accent);color:var(--accent)}
+.quiz-opt.correct .letter{border-color:var(--green);background:rgba(0,255,136,0.15)}
+.quiz-opt.wrong .letter{border-color:var(--red);background:rgba(255,68,102,0.15)}
+.quiz-explain{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-top:.75rem;font-size:.9rem;color:var(--text2);display:none}
+.quiz-explain.show{display:block}
+.quiz-explain strong{color:var(--green)}
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin:1.5rem 0}
+.fcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);height:200px;perspective:1000px;cursor:pointer}
+.fcard-in{width:100%;height:100%;position:relative;transition:transform .5s;transform-style:preserve-3d}
+.fcard.flipped .fcard-in{transform:rotateY(180deg)}
+.fcard-f,.fcard-b{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--radius2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+.fcard-f{background:var(--card);border:1px solid var(--border)}
+.fcard-f h4{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:.5rem}
+.fcard-f p{font-size:.85rem;color:var(--text3)}
+.fcard-b{background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(139,92,246,0.1));border:1px solid rgba(0,212,255,0.3);transform:rotateY(180deg)}
+.fcard-b p{font-size:.9rem;color:var(--text2);line-height:1.5}
+.fcard-b strong{color:var(--accent)}
+.pent{background:linear-gradient(135deg,rgba(255,68,102,0.08),rgba(255,140,0,0.05));border:1px solid rgba(255,68,102,0.2);border-radius:var(--radius2);padding:1.5rem;margin:1.5rem 0}
+.pent .pent-title{font-weight:700;color:var(--red);font-size:1rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+.pent p,.pent li{color:var(--text2);font-size:.95rem}
+.pent ul{list-style:none;padding:0;margin:.5rem 0 0}
+.pent ul li{padding:.3rem 0;padding-left:1.2rem;position:relative}
+.pent ul li::before{content:'\26A1';position:absolute;left:0;font-size:.8rem}
+.lab{background:var(--card);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;margin:1.5rem 0}
+.lab .lab-num{display:inline-block;background:var(--grad1);color:#000;font-size:.75rem;font-weight:700;padding:.3rem .8rem;border-radius:999px;margin-bottom:.75rem;text-transform:uppercase}
+.lab h4{margin-top:0;color:var(--text);font-size:1.1rem;margin-bottom:.75rem}
+.lab-steps{counter-reset:lab-step}
+.lab-step{counter-increment:lab-step;display:flex;gap:1rem;padding:.6rem 0;font-size:.9rem;color:var(--text2);border-bottom:1px solid var(--border)}
+.lab-step:last-child{border-bottom:none}
+.lab-step::before{content:counter(lab-step);width:24px;height:24px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;color:var(--accent)}
+.lab-tip{background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:var(--radius);padding:.75rem 1rem;margin-top:.75rem;font-size:.85rem;color:var(--accent)}
+.takeaway{background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(0,153,255,0.05));border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius2);padding:2rem;margin:2rem 0}
+.takeaway h4{color:var(--accent);margin-top:0;margin-bottom:1rem;font-size:1.1rem}
+.takeaway-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.takeaway-item{display:flex;gap:.75rem;align-items:flex-start}
+.takeaway-item .icon{font-size:1.2rem;flex-shrink:0;margin-top:.1rem}
+.takeaway-item .txt strong{display:block;color:var(--text);margin-bottom:.2rem}
+.takeaway-item .txt span{color:var(--text2);font-size:.9rem}
+.ai{opacity:0;transform:translateY(20px);transition:all .6s cubic-bezier(.4,0,.2,1)}
+.ai.vis{opacity:1;transform:translateY(0)}
+.tag{display:inline-block;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);border-radius:999px;padding:.2rem .7rem;font-size:.75rem;font-weight:600;color:var(--accent)}
+.tag-green{background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.2);color:var(--green)}
+.tag-red{background:rgba(255,68,102,0.1);border-color:rgba(255,68,102,0.2);color:var(--red)}
+.tag-yellow{background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.2);color:var(--yellow)}
+.toc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;margin:2rem 0}
+.toc h3{margin-top:0;color:var(--text)}
+.toc ol{padding-left:1.5rem;color:var(--text2)}
+.toc ol li{padding:.3rem 0}
+.toc ol li a{color:var(--text2);text-decoration:none;transition:color .2s}
+.toc ol li a:hover{color:var(--accent)}
+.toc ol ol{padding-left:1.5rem;margin-top:.25rem}
+.stats-row{display:flex;gap:1rem;flex-wrap:wrap;margin:1.5rem 0}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;flex:1;min-width:140px}
+.stat-card .num{font-size:2rem;font-weight:800;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .lbl{font-size:.8rem;color:var(--text3);margin-top:.25rem}
+.mono{font-family:'JetBrains Mono',monospace}
+@media(max-width:768px){
+.nav-links{display:none}.nav-hamburger{display:block}
+.section{padding:4rem 1.25rem}
+.grid2,.grid3{grid-template-columns:1fr}
+.fc-row{flex-direction:column;align-items:center}
+.hero h1{font-size:2.2rem}
+}
+</style>
+</head>
+<body>
+<noscript><style>.ai{opacity:1!important;transform:none!important}</style></noscript>
+
+<nav class="nav">
+<div class="nav-logo">Android Fundamentals<span>Module 2</span></div>
+<div class="nav-links">
+<a href="#linux">Linux</a>
+<a href="#permissions">Permissions</a>
+<a href="#memory">Memory</a>
+<a href="#filesystem">Filesystem</a>
+<a href="#sandboxing">Sandboxing</a>
+<a href="#adb">ADB</a>
+<a href="android-fundamentals.html">&larr; Module 1</a>
+<a href="android-architecture.html">Module 3 →</a>
+</div>
+<button class="nav-hamburger" onclick="document.querySelector('.nav-mobile').classList.toggle('open')">&#9776;</button>
+</nav>
+<div class="nav-mobile">
+<a href="#linux" onclick="this.parentElement.classList.remove('open')">Linux Fundamentals</a>
+<a href="#permissions" onclick="this.parentElement.classList.remove('open')">Permissions</a>
+<a href="#memory" onclick="this.parentElement.classList.remove('open')">Memory Management</a>
+<a href="#filesystem" onclick="this.parentElement.classList.remove('open')">Filesystem Overview</a>
+<a href="#sandboxing" onclick="this.parentElement.classList.remove('open')">Sandboxing</a>
+<a href="#adb" onclick="this.parentElement.classList.remove('open')">ADB Fundamentals</a>
+<a href="android-fundamentals.html">&larr; Module 1</a>
+<a href="android-architecture.html">Module 3 &rarr;</a>
+</div>
+
+<section class="hero">
+<div>
+<div class="hero-badge">&#128274; MODULE 2 &mdash; ANDROID INTERNALS &amp; LINUX FOUNDATION</div>
+<h1><span class="grad">Under the Hood</span><br>of Android Security</h1>
+<p>Master Linux fundamentals, filesystem internals, sandboxing mechanisms, and ADB &mdash; the backbone of Android security and penetration testing.</p>
+<div class="hero-btns">
+<a href="#linux" class="btn btn-primary">Start Learning &rarr;</a>
+<a href="android-fundamentals.html" class="btn btn-outline">&larr; Module 1</a>
+<a href="android-architecture.html" class="btn btn-outline">Module 3 &rarr;</a>
+</div>
+</div>
+</section>
+
+<div class="section">
+<div class="toc ai">
+<h3>&#128209; Table of Contents</h3>
+<ol>
+<li><a href="#linux">Linux Fundamentals</a>
+<ol>
+<li><a href="#linux-kernel">Linux Kernel in Android</a></li>
+<li><a href="#shell">Shell Basics</a></li>
+<li><a href="#processes">Process Management</a></li>
+<li><a href="#permissions">File Permissions (chmod/chown)</a></li>
+<li><a href="#memory">Memory Management</a></li>
+</ol>
+</li>
+<li><a href="#filesystem">Filesystem Overview</a>
+<ol>
+<li><a href="#fs-overview">Filesystem Hierarchy</a></li>
+<li><a href="#fs-system">/system Partition</a></li>
+<li><a href="#fs-data">/data Partition</a></li>
+<li><a href="#fs-cache">/cache Partition</a></li>
+<li><li><a href="#fs-sdcard">/sdcard (External Storage)</a></li>
+<li><a href="#fs-proc">/proc Virtual Filesystem</a></li>
+<li><a href="#fs-dev">/dev Device Nodes</a></li>
+<li><a href="#fs-vendor">/vendor Partition</a></li>
+</ol>
+</li>
+<li><a href="#sandboxing">Application Sandboxing</a>
+<ol>
+<li><a href="#sandbox-uid">UID Separation</a></li>
+<li><a href="#sandbox-iso">Application Isolation</a></li>
+<li><a href="#sandbox-dirs">App Data Directories</a></li>
+</ol>
+</li>
+<li><a href="#adb">ADB Fundamentals</a>
+<ol>
+<li><a href="#adb-overview">What is ADB?</a></li>
+<li><a href="#adb-setup">Setup and Connection</a></li>
+<li><a href="#adb-commands">Essential Commands</a></li>
+<li><a href="#adb-shell">Shell Access</a></li>
+<li><a href="#adb-labs">Hands-on Labs</a></li>
+</ol>
+</li>
+</ol>
+</div>
+<div class="stats-row ai">
+<div class="stat-card"><div class="num">5</div><div class="lbl">Major Topics</div></div>
+<div class="stat-card"><div class="num">18</div><div class="lbl">Sub-Topics</div></div>
+<div class="stat-card"><div class="num">12</div><div class="lbl">Hands-on Labs</div></div>
+<div class="stat-card"><div class="num">8</div><div class="lbl">Simulations</div></div>
+</div>
+</div>
+
+<!-- SECTION 2.1: LINUX FUNDAMENTALS -->
+<div class="divider"></div>
+<section class="section" id="linux">
+<div class="section-label ai">&#128039; Section 2.1</div>
+<h2 class="ai">Linux <span class="grad">Fundamentals</span></h2>
+<p class="ai">Android is built on the Linux kernel. Understanding Linux fundamentals is essential for Android security analysis and penetration testing.</p>
+
+<h3 class="ai" id="linux-kernel">2.1.1 &mdash; Linux Kernel in Android</h3>
+<p class="ai">The Linux kernel is the heart of Android. It handles hardware communication, memory management, process scheduling, and security enforcement.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#129504;</div>
+<h4>Kernel Responsibilities</h4>
+<ul>
+<li>Process scheduling (CFS &mdash; Completely Fair Scheduler)</li>
+<li>Memory management (virtual memory, paging, OOM killer)</li>
+<li>Hardware abstraction (drivers for camera, WiFi, GPS, etc.)</li>
+<li>Security enforcement (SELinux, DAC, capabilities)</li>
+<li>Inter-process communication (IPC)</li>
+<li>Power management and wake locks</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128241;</div>
+<h4>Android Kernel Modifications</h4>
+<ul>
+<li><strong>Binder IPC</strong> &mdash; custom IPC replacing traditional pipes</li>
+<li><strong>Wakelocks</strong> &mdash; prevent CPU sleep for background tasks</li>
+<li><strong>Low Memory Killer (LMK)</strong> &mdash; aggressive process killing</li>
+<li><strong>Ashmem</strong> &mdash; anonymous shared memory for efficient IPC</li>
+<li><strong>SELinux (enforcing)</strong> &mdash; mandatory access control</li>
+<li><strong>Seccomp</strong> &mdash; system call filtering</li>
+</ul>
+</div>
+</div>
+
+<div class="fc ai">
+<div class="fc-title">Android Architecture Stack</div>
+<div class="fc-row"><div class="fc-box highlight">Android Apps</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box">Java/Kotlin API</div><div class="fc-box">NDK (Native C/C++)</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box purple">Android Framework</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box green">Hardware Abstraction Layer (HAL)</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box red">Linux Kernel</div></div>
+</div>
+
+<div class="pent ai">
+<div class="pent-title">&#9889; Pentester's Perspective</div>
+<p>The Android kernel is a prime target. A kernel exploit gives full system access (root), bypassing all sandboxing:</p>
+<ul>
+<li><strong>Kernel vulnerabilities</strong> &mdash; CVE databases for unpatched exploits (DirtyPipe, DirtyCow)</li>
+<li><strong>Driver vulnerabilities</strong> &mdash; Qualcomm, MediaTek, Samsung drivers are common targets</li>
+<li><strong>SELinux bypass</strong> &mdash; Misconfigured policies can be exploited</li>
+<li><strong>Bootloader exploitation</strong> &mdash; If unlocked, allows custom kernel loading</li>
+</ul>
+</div>
+
+<div class="box box-blue ai">
+<div class="box-title">&#127919; Key Concept</div>
+The Linux kernel version can be found via <code>uname -r</code> or in <code>/proc/version</code>. Always check kernel version to determine which exploits may work during a penetration test.
+</div>
+
+<h3 class="ai" id="shell">2.1.2 &mdash; Shell Basics</h3>
+<p class="ai">The shell is your command-line interface to the Android system. Through ADB shell, you interact directly with the Linux subsystem.</p>
+
+<div class="tabs ai" data-tab-group="shell-tabs">
+<button class="tab-btn active" data-tab="shell-nav">Navigation</button>
+<button class="tab-btn" data-tab="shell-files">File Operations</button>
+<button class="tab-btn" data-tab="shell-text">Text Processing</button>
+<button class="tab-btn" data-tab="shell-search">Search and Find</button>
+</div>
+<div class="tab-content active" data-tab="shell-nav">
+<pre><code><span class="comment"># Print current directory</span>
+<span class="cmd">pwd</span>                          <span class="comment"># /data/data</span>
+
+<span class="comment"># List directory contents</span>
+<span class="cmd">ls</span>                           <span class="comment"># basic listing</span>
+<span class="cmd">ls</span> <span class="flag">-la</span>                       <span class="comment"># detailed + hidden files</span>
+
+<span class="comment"># Change directory</span>
+<span class="cmd">cd</span> <span class="path">/system</span>                   <span class="comment"># go to /system</span>
+<span class="cmd">cd</span> <span class="flag">..</span>                        <span class="comment"># go up one level</span>
+<span class="cmd">cd</span> <span class="flag">~</span>                         <span class="comment"># go to home directory</span></code></pre>
+</div>
+<div class="tab-content" data-tab="shell-files">
+<pre><code><span class="comment"># Create files and directories</span>
+<span class="cmd">touch</span> <span class="path">file.txt</span>              <span class="comment"># create empty file</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> dir/subdir          <span class="comment"># create nested dirs</span>
+
+<span class="comment"># Copy, move, delete</span>
+<span class="cmd">cp</span> <span class="path">source.txt</span> <span class="path">dest.txt</span>     <span class="comment"># copy file</span>
+<span class="cmd">mv</span> <span class="path">old.txt</span> <span class="path">new.txt</span>         <span class="comment"># move/rename</span>
+<span class="cmd">rm</span> <span class="path">file.txt</span>                 <span class="comment"># delete file</span>
+<span class="cmd">rm</span> <span class="flag">-rf</span> <span class="path">dir/</span>                  <span class="comment"># force delete dir</span></code></pre>
+</div>
+<div class="tab-content" data-tab="shell-text">
+<pre><code><span class="comment"># View file contents</span>
+<span class="cmd">cat</span> <span class="path">file.txt</span>                <span class="comment"># print entire file</span>
+<span class="cmd">head</span> <span class="flag">-n</span> <span class="path">20</span> <span class="path">file.txt</span>        <span class="comment"># first 20 lines</span>
+<span class="cmd">tail</span> <span class="flag">-n</span> <span class="path">20</span> <span class="path">file.txt</span>        <span class="comment"># last 20 lines</span>
+
+<span class="comment"># Filter and process</span>
+<span class="cmd">grep</span> <span class="flag">-r</span> <span class="path">"password"</span> <span class="path">.</span>       <span class="comment"># recursive search</span>
+<span class="cmd">sort</span> <span class="path">file.txt</span>               <span class="comment"># sort lines</span>
+<span class="cmd">wc</span> <span class="flag">-l</span> <span class="path">file.txt</span>              <span class="comment"># count lines</span>
+
+<span class="comment"># Pipe and redirect</span>
+<span class="cmd">cat</span> <span class="path">log.txt</span> | <span class="cmd">grep</span> <span class="flag">"error"</span> | <span class="cmd">wc</span> <span class="flag">-l</span>
+<span class="cmd">echo</span> <span class="path">"hello"</span> &gt; <span class="path">out.txt</span>     <span class="comment"># overwrite</span>
+<span class="cmd">echo</span> <span class="path">"world"</span> &gt;&gt; <span class="path">out.txt</span>    <span class="comment"># append</span></code></pre>
+</div>
+<div class="tab-content" data-tab="shell-search">
+<pre><code><span class="comment"># Find files by name</span>
+<span class="cmd">find</span> <span class="path">/</span> <span class="flag">-name</span> <span class="path">"*.apk"</span> <span class="flag">2</span>&gt;/dev/null
+
+<span class="comment"># Find files by size</span>
+<span class="cmd">find</span> <span class="path">/data</span> <span class="flag">-size</span> <span class="path">+10M</span> <span class="flag">-type</span> <span class="path">f</span>
+
+<span class="comment"># Find recently modified files</span>
+<span class="cmd">find</span> <span class="path">/sdcard</span> <span class="flag">-mtime</span> <span class="path">-1</span> <span class="flag">-type</span> <span class="path">f</span>
+
+<span class="comment"># Find SUID binaries (privesc)</span>
+<span class="cmd">find</span> <span class="path">/</span> <span class="flag">-perm</span> <span class="path">-4000</span> <span class="flag">-type</span> <span class="path">f</span> <span class="flag">2</span>&gt;/dev/null</code></pre>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#128421;&#65039;</span> Interactive Simulation: Shell Command Practice</div>
+<div class="sim-steps" id="sim-shell">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>Scenario:</strong> <span>You need to find all APK files on the device and check their permissions.</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>Step 1:</strong> <span>Open ADB shell: <code>adb shell</code></span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>Step 2:</strong> <span>Navigate to app directory: <code>cd /data/app</code></span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>Step 3:</strong> <span>List all installed APKs: <code>ls -la</code></span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Step 4:</strong> <span>Find specific app: <code>find . -name "*banking*" -type d</code></span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>Step 5:</strong> <span>Check permissions: <code>ls -la com.example.banking/</code></span></div></div>
+<div class="sim-step"><div class="num">7</div><div class="txt"><strong>Result:</strong> <span>Successfully located the app and can now analyze its file permissions.</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-shell')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-shell')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-shell')">Reset</button>
+</div>
+</div>
+
+<h3 class="ai" id="processes">2.1.3 &mdash; Process Management</h3>
+<p class="ai">Android runs dozens of processes simultaneously. Understanding process management helps identify running services and detect malware.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#9881;&#65039;</div>
+<h4>Process States</h4>
+<ul>
+<li><span class="tag-green">Running (R)</span> &mdash; Actively executing on CPU</li>
+<li><span class="tag">Sleeping (S)</span> &mdash; Waiting for an event</li>
+<li><span class="tag-yellow">Stopped (T)</span> &mdash; Suspended by signal</li>
+<li><span class="tag-red">Zombie (Z)</span> &mdash; Terminated but not reaped</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128203;</div>
+<h4>Key Process Commands</h4>
+<ul>
+<li><code>ps -A</code> &mdash; List all processes</li>
+<li><code>ps -ef</code> &mdash; Full format listing</li>
+<li><code>top</code> &mdash; Real-time process monitor</li>
+<li><code>kill -9 PID</code> &mdash; Force kill process</li>
+</ul>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#128269;</span> Simulation: Process Lifecycle in Android</div>
+<div class="sim-steps" id="sim-process">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>App Launch:</strong> <span>User taps icon &rarr; Zygote forks new process &rarr; App process starts</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>Running:</strong> <span>App in foreground, CPU allocated by CFS scheduler</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>Background:</strong> <span>User presses Home &rarr; App moves to background, lower CPU priority</span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>Memory Pressure:</strong> <span>LMK targets background processes with highest oom_adj score</span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Termination:</strong> <span>LMK sends SIGKILL &rarr; Process terminated &rarr; Memory freed</span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>Restart:</strong> <span>If app has foreground/sticky service, system may restart it</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-process')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-process')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-process')">Reset</button>
+</div>
+</div>
+</section>
+
+<!-- SECTION 2.1.4: PERMISSIONS -->
+<div class="divider"></div>
+<section class="section" id="perms">
+<div class="section-label ai">&#128272; Section 2.1.4</div>
+<h2 class="ai">File <span class="grad">Permissions</span> (chmod/chown)</h2>
+<p class="ai">Linux file permissions control who can read, write, and execute files. On Android, these work alongside the Android permission system for layered security.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128272;</div>
+<h4>Permission Types</h4>
+<ul>
+<li><strong>r (read)</strong> &mdash; View file contents / list directory</li>
+<li><strong>w (write)</strong> &mdash; Modify file / create-delete in dir</li>
+<li><strong>x (execute)</strong> &mdash; Run as program / access directory</li>
+<li><strong>s (setuid)</strong> &mdash; Run as file owner (dangerous!)</li>
+<li><strong>t (sticky bit)</strong> &mdash; Only owner can delete file</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128100;</div>
+<h4>Ownership Classes</h4>
+<ul>
+<li><strong>u (user/owner)</strong> &mdash; The file's owner</li>
+<li><strong>g (group)</strong> &mdash; Users in the file's group</li>
+<li><strong>o (others)</strong> &mdash; Everyone else</li>
+<li><strong>a (all)</strong> &mdash; All three classes (u+g+o)</li>
+</ul>
+</div>
+</div>
+
+<div class="box box-yellow ai">
+<div class="box-title">&#9888;&#65039; Permission Number System</div>
+<p><strong>r=4, w=2, x=1</strong>. Combine for each class:</p>
+<p><code>chmod 755 file</code> &rarr; Owner=rwx(7), Group=r-x(5), Others=r-x(5)</p>
+<p><code>chmod 644 file</code> &rarr; Owner=rw-(6), Group=r--(4), Others=r--(4)</p>
+<p><code>chmod 700 dir</code> &rarr; Owner=rwx(7), Group=---(0), Others=---(0)</p>
+</div>
+
+<pre class="ai"><code><span class="comment"># View permissions</span>
+<span class="cmd">ls</span> <span class="flag">-la</span> <span class="path">/data/data/com.app/</span>
+<span class="comment"># drwx------ 6 u0_a45 u0_a45 4096 databases</span>
+
+<span class="comment"># Change permissions (symbolic)</span>
+<span class="cmd">chmod</span> <span class="flag">u+rwx</span> <span class="path">file.txt</span>       <span class="comment"># add rwx for owner</span>
+<span class="cmd">chmod</span> <span class="flag">g-w</span> <span class="path">file.txt</span>         <span class="comment"># remove write for group</span>
+
+<span class="comment"># Change permissions (numeric)</span>
+<span class="cmd">chmod</span> <span class="flag">755</span> <span class="path">script.sh</span>        <span class="comment"># rwxr-xr-x</span>
+<span class="cmd">chmod</span> <span class="flag">600</span> <span class="path">secret.key</span>       <span class="comment"># rw-------</span>
+
+<span class="comment"># Change ownership</span>
+<span class="cmd">chown</span> <span class="path">u0_a45:u0_a45</span> <span class="path">file</span>
+<span class="cmd">chown</span> <span class="flag">-R</span> <span class="path">root:root</span> <span class="path">/system</span>
+
+<span class="comment"># Find SUID/SGID files (privesc vectors)</span>
+<span class="cmd">find</span> <span class="path">/</span> <span class="flag">-perm</span> <span class="path">-4000</span> <span class="flag">-type</span> <span class="path">f</span> <span class="flag">2</span>&gt;/dev/null  <span class="comment"># SUID</span>
+<span class="cmd">find</span> <span class="path">/</span> <span class="flag">-perm</span> <span class="path">-2000</span> <span class="flag">-type</span> <span class="path">f</span> <span class="flag">2</span>&gt;/dev/null  <span class="comment"># SGID</span></code></pre>
+
+<div class="pent ai">
+<div class="pent-title">&#9889; Pentester's Perspective</div>
+<ul>
+<li><strong>World-readable app data</strong> &mdash; Misconfigured permissions expose sensitive data</li>
+<li><strong>SUID binaries</strong> &mdash; Run as root, common privilege escalation vectors</li>
+<li><strong>Weak /data permissions</strong> &mdash; Apps can read each other's data</li>
+<li><strong>SELinux context matters</strong> &mdash; Even with correct DAC, SELinux can block access</li>
+</ul>
+</div>
+</section>
+
+<!-- SECTION 2.1.5: MEMORY MANAGEMENT -->
+<div class="divider"></div>
+<section class="section" id="memory">
+<div class="section-label ai">&#129518; Section 2.1.5</div>
+<h2 class="ai">Memory <span class="grad">Management</span></h2>
+<p class="ai">Android uses virtual memory, zRAM, and the Low Memory Killer to balance performance and memory constraints across devices.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#129518;</div>
+<h4>Virtual Memory Concepts</h4>
+<ul>
+<li><strong>Virtual address space</strong> &mdash; Each process gets its own</li>
+<li><strong>Page tables</strong> &mdash; Map virtual to physical RAM</li>
+<li><strong>Swapping to zRAM</strong> &mdash; Compressed swap in RAM</li>
+<li><strong>Page faults</strong> &mdash; Triggered accessing swapped pages</li>
+<li><strong>mmap()</strong> &mdash; Memory-mapped files for efficient I/O</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128200;</div>
+<h4>OOM Killer / LMK</h4>
+<ul>
+<li><strong>oom_score_adj</strong> &mdash; Higher = more likely killed</li>
+<li><strong>Foreground apps</strong> &mdash; Score 0 (protected)</li>
+<li><strong>Cached processes</strong> &mdash; Score 900+ (killed first)</li>
+<li><strong>lmkd</strong> &mdash; Android-specific daemon</li>
+</ul>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#128128;</span> Simulation: Low Memory Killer Decision Process</div>
+<div class="sim-steps" id="sim-lmk">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>Memory Pressure Rising:</strong> <span>Available RAM drops below threshold. LMK monitors via /proc/pressure/memory</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>LMK Threshold Reached:</strong> <span>Minfree levels exceeded. LMK evaluates all oom_score_adj values.</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>Target Selection:</strong> <span>Cached process (score=950) selected first, then empty, then services.</span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>SIGKILL Sent:</strong> <span>No chance to save state. Memory immediately freed.</span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Continue or Stop:</strong> <span>If still under pressure, LMK continues killing by score order.</span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>App Restart:</strong> <span>START_STICKY services may be restarted automatically.</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-lmk')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-lmk')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-lmk')">Reset</button>
+</div>
+</div>
+
+<pre class="ai"><code><span class="comment"># Check memory status</span>
+<span class="cmd">cat</span> <span class="path">/proc/meminfo</span>          <span class="comment"># detailed memory info</span>
+<span class="cmd">free</span> <span class="flag">-m</span>                     <span class="comment"># memory in MB</span>
+
+<span class="comment"># Check process memory</span>
+<span class="cmd">dumpsys</span> <span class="path">meminfo</span> <span class="path">com.app</span>     <span class="comment"># Android memory breakdown</span>
+<span class="cmd">cat</span> <span class="path">/proc/PID/smaps</span>        <span class="comment"># detailed memory mappings</span>
+
+<span class="comment"># Check LMK settings</span>
+<span class="cmd">cat</span> <span class="path">/sys/module/lowmemorykiller/parameters/minfree</span>
+<span class="cmd">cat</span> <span class="path">/sys/module/lowmemorykiller/parameters/adj</span></code></pre>
+
+<div class="box box-blue ai">
+<div class="box-title">&#127919; Memory Forensics Tip</div>
+<p><code>/proc/PID/smaps</code> reveals sensitive data in memory including encryption keys, passwords, and decrypted data. Dump process memory before killing it during forensics.</p>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 2.2: FILESYSTEM OVERVIEW -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section" id="filesystem">
+<div class="section-label ai">&#128193; Section 2.2</div>
+<h2 class="ai">Filesystem <span class="grad">Overview</span></h2>
+<p class="ai">Android's filesystem is organized into specific mount points, each serving a distinct purpose. Understanding this hierarchy is essential for security analysis.</p>
+
+<div class="fc ai">
+<div class="fc-title">Android Filesystem Mount Points</div>
+<div class="fc-row">
+<div class="fc-box red">/system<br><small>OS + Framework</small></div>
+<div class="fc-box highlight">/data<br><small>App Data</small></div>
+<div class="fc-box yellow">/cache<br><small>Temp Files</small></div>
+</div>
+<div class="fc-row" style="margin-top:.75rem">
+<div class="fc-box green">/sdcard<br><small>User Storage</small></div>
+<div class="fc-box purple">/proc<br><small>Process Info</small></div>
+<div class="fc-box">/dev<br><small>Devices</small></div>
+</div>
+<div class="fc-row" style="margin-top:.75rem">
+<div class="fc-box" style="border-color:var(--orange);background:rgba(255,140,0,0.1)">/vendor<br><small>OEM Drivers</small></div>
+<div class="fc-box">/boot<br><small>Kernel</small></div>
+<div class="fc-box">/mnt<br><small>Mount Points</small></div>
+</div>
+</div>
+
+<div class="table-wrap ai">
+<table>
+<thead>
+<tr><th>Mount Point</th><th>Purpose</th><th>Size</th><th>Wipeable?</th><th>Root Required?</th></tr>
+</thead>
+<tbody>
+<tr><td><code>/system</code></td><td>Android OS, framework, system apps</td><td>2-8 GB</td><td>&#9888;&#65039; Breaks device</td><td>Yes</td></tr>
+<tr><td><code>/data</code></td><td>Installed apps, user data, databases</td><td>32-256 GB</td><td>Factory reset</td><td>Yes</td></tr>
+<tr><td><code>/cache</code></td><td>OTA updates, temp files</td><td>500MB-2GB</td><td>&#9989; Safe</td><td>No</td></tr>
+<tr><td><code>/sdcard</code></td><td>User files, photos, downloads</td><td>64GB-1TB</td><td>&#9989; Safe</td><td>No</td></tr>
+<tr><td><code>/proc</code></td><td>Virtual: process/kernel info</td><td>0 (virtual)</td><td>N/A</td><td>Varies</td></tr>
+<tr><td><code>/dev</code></td><td>Device nodes, drivers</td><td>0 (virtual)</td><td>N/A</td><td>Yes</td></tr>
+<tr><td><code>/vendor</code></td><td>OEM-specific drivers and HALs</td><td>500MB-2GB</td><td>&#9888;&#65039; May break</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- /system -->
+<h3 class="ai" id="fs-system">2.2.1 &mdash; /system Partition</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128193;</div>
+<h4>/system Directory Structure</h4>
+<ul>
+<li><code>/system/app/</code> &mdash; System apps (pre-installed)</li>
+<li><code>/system/priv-app/</code> &mdash; Privileged system apps</li>
+<li><code>/system/framework/</code> &mdash; Android framework JARs</li>
+<li><code>/system/lib/</code> &mdash; 32-bit shared libraries</li>
+<li><code>/system/lib64/</code> &mdash; 64-bit shared libraries</li>
+<li><code>/system/bin/</code> &mdash; Essential binaries</li>
+<li><code>/system/etc/</code> &mdash; Configuration files</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128274;</div>
+<h4>Security Properties</h4>
+<ul>
+<li><strong>Mount:</strong> Read-only (ro)</li>
+<li><strong>SELinux context:</strong> system_file</li>
+<li><strong>Integrity:</strong> dm-verity (verified boot)</li>
+<li><strong>System apps:</strong> Run with system UID (1000)</li>
+<li><strong>Modifications:</strong> Require root + remount</li>
+</ul>
+</div>
+</div>
+
+<pre class="ai"><code><span class="cmd">ls</span> <span class="path">/system/app/</span>
+<span class="cmd">ls</span> <span class="path">/system/lib64/*.so</span> | <span class="cmd">head</span> <span class="flag">-20</span>
+<span class="cmd">cat</span> <span class="path">/system/build.prop</span> | <span class="cmd">grep</span> <span class="flag">-E</span> <span class="path">"ro.build|ro.product"</span>
+<span class="cmd">mount</span> | <span class="cmd">grep</span> <span class="path">/system</span></code></pre>
+
+<!-- /data -->
+<h3 class="ai" id="fs-data">2.2.2 &mdash; /data Partition</h3>
+<p class="ai">The most security-sensitive area &mdash; contains all installed application data, databases, and user information.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128230;</div>
+<h4>/data Key Directories</h4>
+<ul>
+<li><code>/data/app/</code> &mdash; Installed APKs (non-system)</li>
+<li><code>/data/data/</code> &mdash; App internal storage (sandbox)</li>
+<li><code>/data/dalvik-cache/</code> &mdash; Optimized DEX files (OAT)</li>
+<li><code>/data/local/</code> &mdash; Local temporary storage</li>
+<li><code>/data/media/</code> &mdash; Internal storage emulated as /sdcard</li>
+<li><code>/data/system/</code> &mdash; System settings, accounts</li>
+<li><code>/data/system/packages.xml</code> &mdash; All packages + permissions</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128273;</div>
+<h4>Critical Files for Forensics</h4>
+<ul>
+<li><code>packages.xml</code> &mdash; All packages, UIDs, permissions</li>
+<li><code>packages.list</code> &mdash; Package names + UIDs</li>
+<li><code>locksettings.db</code> &mdash; Screen lock settings</li>
+<li><code>accounts.db</code> &mdash; Google and other accounts</li>
+<li><code>wifi/WifiConfigStore.xml</code> &mdash; Saved WiFi passwords</li>
+<li><code>system_ce/</code> &mdash; Credential-encrypted storage</li>
+<li><code>system_de/</code> &mdash; Device-encrypted storage</li>
+</ul>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#128193;</span> Simulation: Exploring /data Partition</div>
+<div class="sim-steps" id="sim-data">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>Enter ADB Shell:</strong> <span><code>adb shell</code> &mdash; non-root user access.</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>Attempt /data:</strong> <span><code>ls /data/</code> &mdash; Access denied! Only root can list /data root.</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>Try app data:</strong> <span><code>ls /data/data/</code> &mdash; Also denied. Each app's data is UID-protected.</span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>With root:</strong> <span><code>su -c "ls /data/"</code> &mdash; Now you can see all directories!</span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Explore packages:</strong> <span><code>cat /data/system/packages.xml</code> &mdash; All packages, UIDs, and permissions.</span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>Extract app data:</strong> <span><code>adb backup -f backup.ab -noapk com.target.app</code></span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-data')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-data')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-data')">Reset</button>
+</div>
+</div>
+
+<div class="pent ai">
+<div class="pent-title">&#9889; Pentester's Perspective &mdash; /data</div>
+<ul>
+<li><strong>Without root:</strong> Use <code>adb backup</code>, check exported content providers</li>
+<li><strong>With root:</strong> Full access to all app data &mdash; databases, prefs, keychains</li>
+<li><strong>packages.xml:</strong> Goldmine showing which permissions each app has</li>
+<li><strong>WiFi passwords:</strong> <code>/data/misc/wifi/WifiConfigStore.xml</code></li>
+<li><strong>Account tokens:</strong> <code>/data/system/accounts.db</code> has auth tokens</li>
+</ul>
+</div>
+
+<!-- /cache -->
+<h3 class="ai" id="fs-cache">2.2.3 &mdash; /cache Partition</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128229;</div>
+<h4>/cache Contents</h4>
+<ul>
+<li><strong>OTA update ZIPs</strong> &mdash; Downloaded system updates</li>
+<li><strong>recovery/</strong> &mdash; Recovery mode logs</li>
+<li><strong>data/</strong> &mdash; App-specific cache directories</li>
+<li><strong>Temporary files</strong> &mdash; App temporary data</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128465;&#65039;</div>
+<h4>Wiping /cache</h4>
+<ul>
+<li><strong>Safe to wipe:</strong> Does not affect user data</li>
+<li><strong>Recovery mode:</strong> Wipe cache partition option</li>
+<li><strong>Forensic value:</strong> Temp files, download history</li>
+<li><strong>Anti-forensics:</strong> Attackers wipe to remove traces</li>
+</ul>
+</div>
+</div>
+
+<!-- /sdcard -->
+<h3 class="ai" id="fs-sdcard">2.2.4 &mdash; /sdcard (External Storage)</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128241;</div>
+<h4>/sdcard Structure</h4>
+<ul>
+<li><code>/sdcard/DCIM/</code> &mdash; Camera photos and videos</li>
+<li><code>/sdcard/Download/</code> &mdash; Downloaded files</li>
+<li><code>/sdcard/Android/data/</code> &mdash; App external storage</li>
+<li><code>/sdcard/WhatsApp/</code> &mdash; WhatsApp media/databases</li>
+<li><code>/sdcard/Telegram/</code> &mdash; Telegram media/documents</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#9888;&#65039;</div>
+<h4>Security Implications</h4>
+<ul>
+<li><strong>No root required</strong> &mdash; Any app with READ_EXTERNAL_STORAGE</li>
+<li><strong>Scoped Storage (11+)</strong> &mdash; Apps restricted to own dirs</li>
+<li><strong>Forensic goldmine:</strong> Photos, messages, databases</li>
+<li><strong>Deleted files:</strong> May be recoverable with forensic tools</li>
+</ul>
+</div>
+</div>
+
+<div class="box box-yellow ai">
+<div class="box-title">&#9888;&#65039; Scoped Storage (Android 10+)</div>
+<p>Apps can only access their own <code>/sdcard/Android/data/com.app/</code> without <code>MANAGE_EXTERNAL_STORAGE</code> permission. Apps with this permission have full access.</p>
+</div>
+
+<!-- /proc -->
+<h3 class="ai" id="fs-proc">2.2.5 &mdash; /proc Virtual Filesystem</h3>
+<p class="ai">/proc is a virtual filesystem providing real-time process and kernel information. It exists only in memory &mdash; no disk storage.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128202;</div>
+<h4>/proc Key Files</h4>
+<ul>
+<li><code>/proc/cpuinfo</code> &mdash; CPU information</li>
+<li><code>/proc/meminfo</code> &mdash; Memory statistics</li>
+<li><code>/proc/version</code> &mdash; Kernel version</li>
+<li><code>/proc/mounts</code> &mdash; Mounted filesystems</li>
+<li><code>/proc/net/</code> &mdash; Network statistics</li>
+<li><code>/proc/PID/</code> &mdash; Per-process information</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128269;</div>
+<h4>Per-Process (/proc/PID/)</h4>
+<ul>
+<li><code>cmdline</code> &mdash; Command line arguments</li>
+<li><code>status</code> &mdash; Process status (name, state, UID)</li>
+<li><code>smaps</code> &mdash; Detailed memory mappings</li>
+<li><code>fd/</code> &mdash; Open file descriptors</li>
+<li><code>exe</code> &mdash; Symlink to executable</li>
+<li><code>environ</code> &mdash; Environment variables</li>
+</ul>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#128300;</span> Simulation: /proc PID Explorer</div>
+<div class="sim-steps" id="sim-proc">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>Find Target PID:</strong> <span><code>ps -A | grep com.target.app</code> &rarr; PID 12345</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>Check Status:</strong> <span><code>cat /proc/12345/status</code> &rarr; Name, State, UID, GID, memory</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>View CommandLine:</strong> <span><code>cat /proc/12345/cmdline | tr '\0' ' '</code></span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>Check Open Files:</strong> <span><code>ls -la /proc/12345/fd/</code> &rarr; file descriptors, sockets</span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Analyze Memory:</strong> <span><code>cat /proc/12345/smaps</code> &rarr; memory allocations</span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>Check Network:</strong> <span><code>cat /proc/12345/net/tcp</code> &rarr; TCP connections</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-proc')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-proc')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-proc')">Reset</button>
+</div>
+</div>
+
+<!-- /dev -->
+<h3 class="ai" id="fs-dev">2.2.6 &mdash; /dev Device Nodes</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128268;</div>
+<h4>Key Device Nodes</h4>
+<ul>
+<li><code>/dev/block/</code> &mdash; Block devices (storage)</li>
+<li><code>/dev/binder</code> &mdash; Binder IPC device</li>
+<li><code>/dev/ashmem</code> &mdash; Anonymous shared memory</li>
+<li><code>/dev/null</code> &mdash; Null device (discards output)</li>
+<li><code>/dev/random</code> &mdash; Random number generator</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128190;</div>
+<h4>Block Devices (Storage)</h4>
+<ul>
+<li><code>/dev/block/bootdevice/</code> &mdash; eMMC/UFS storage</li>
+<li><code>/dev/block/dm-X</code> &mdash; Device-mapper (FDE/FBE)</li>
+<li><code>/dev/block/sda1</code> &mdash; /system partition</li>
+<li><code>/dev/block/sda2</code> &mdash; /data partition</li>
+<li><strong>dd if=/dev/block/...</strong> &mdash; Raw partition dump</li>
+</ul>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#9881;&#65039;</span> Simulation: /dev Hardware Communication Flow</div>
+<div class="sim-steps" id="sim-dev">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>App Request:</strong> <span>App calls Camera API &rarr; Framework &rarr; Camera HAL &rarr; /dev/camera node</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>Kernel Driver:</strong> <span>/dev/camera routes to kernel driver &rarr; communicates via I2C/SPI bus</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>Data Transfer:</strong> <span>Hardware captures image &rarr; DMA to shared memory &rarr; Framework receives</span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>Display:</strong> <span>Framework sends to /dev/graphics/fb0 &rarr; Display renders to screen</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-dev')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-dev')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-dev')">Reset</button>
+</div>
+</div>
+
+<!-- /vendor -->
+<h3 class="ai" id="fs-vendor">2.2.7 &mdash; /vendor Partition</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#127981;</div>
+<h4>/vendor Contents</h4>
+<ul>
+<li><code>/vendor/lib/</code> &mdash; Vendor-specific shared libraries</li>
+<li><code>/vendor/bin/</code> &mdash; Vendor binaries</li>
+<li><code>/vendor/firmware/</code> &mdash; Firmware files</li>
+<li><code>/vendor/etc/</code> &mdash; Vendor configuration</li>
+<li><code>/vendor/hw/</code> &mdash; HAL modules</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128295;</div>
+<h4>Project Treble</h4>
+<ul>
+<li><strong>Separation:</strong> /system and /vendor are independent</li>
+<li><strong>HIDL:</strong> Hardware Interface Definition Language</li>
+<li><strong>Security:</strong> Vendor code has own SELinux context</li>
+<li><strong>Updates:</strong> OEMs can update vendor independently</li>
+<li><strong>Pentesting:</strong> Vendor binaries often have vulnerabilities</li>
+</ul>
+</div>
+</div>
+
+<div class="takeaway ai">
+<h4>&#127919; Key Takeaways &mdash; Filesystem</h4>
+<div class="takeaway-grid">
+<div class="takeaway-item"><div class="icon">&#128193;</div><div class="txt"><strong>Filesystem = Attack Surface Map</strong><span>Each mount point has different security and forensic value.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128230;</div><div class="txt"><strong>/data = Crown Jewels</strong><span>App data, databases, keys, tokens. Root required for full access.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128202;</div><div class="txt"><strong>/proc = Live System State</strong><span>Virtual filesystem revealing process memory, network, and kernel params.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128190;</div><div class="txt"><strong>/dev = Hardware Interface</strong><span>Device nodes bridge userspace and kernel. Block devices enable raw dumps.</span></div></div>
+</div>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 2.3: SANDBOXING -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section" id="sandboxing">
+<div class="section-label ai">&#128274; Section 2.3</div>
+<h2 class="ai">Application <span class="grad">Sandboxing</span></h2>
+<p class="ai">Android's sandboxing model ensures each app runs in isolation, preventing unauthorized access to other apps' data and system resources.</p>
+
+<h3 class="ai" id="sandbox-uid">2.3.1 &mdash; UID Separation</h3>
+<p class="ai">Every Android app is assigned a unique Linux UID at install time, used to isolate app data and restrict system resource access.</p>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128100;</div>
+<h4>How UID Assignment Works</h4>
+<ul>
+<li><strong>Install time:</strong> PackageManager assigns UID from packages.xml</li>
+<li><strong>UID range:</strong> Apps start from 10000 (u0_aXXX)</li>
+<li><strong>Shared UID:</strong> Apps with same <code>sharedUserId</code> share UID</li>
+<li><strong>System apps:</strong> UIDs 1000-9999</li>
+<li><strong>Root:</strong> UID 0 (superuser)</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128272;</div>
+<h4>UID-Based Security</h4>
+<ul>
+<li><strong>File permissions:</strong> DAC checks UID/GID</li>
+<li><strong>Process isolation:</strong> Each UID = own process space</li>
+<li><strong>IPC:</strong> Binder checks caller UID/PID</li>
+<li><strong>SELinux:</strong> MAC adds another restriction layer</li>
+<li><strong>sharedUserId risk:</strong> Apps sharing UID read each other's data</li>
+</ul>
+</div>
+</div>
+
+<div class="fc ai">
+<div class="fc-title">Android UID Assignment Flow</div>
+<div class="fc-row"><div class="fc-box">APK Install</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box">PackageManager reads AndroidManifest.xml</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box highlight">Check for sharedUserId</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box green">Assign new UID</div><div class="fc-box yellow">Reuse existing UID</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box purple">Create /data/data/com.app/ with UID:GID</div></div>
+</div>
+
+<div class="pent ai">
+<div class="pent-title">&#9889; Pentester's Perspective &mdash; UID</div>
+<ul>
+<li><strong>Shared UID exploitation:</strong> Apps sharing UID can read each other's data</li>
+<li><strong>UID enumeration:</strong> <code>ps -A</code> shows UID column, map via <code>packages.list</code></li>
+<li><strong>root = UID 0:</strong> Root bypasses ALL UID restrictions</li>
+</ul>
+</div>
+
+<h3 class="ai" id="sandbox-iso">2.3.2 &mdash; Application Isolation</h3>
+
+<div class="grid3 ai">
+<div class="card">
+<div class="icon">&#129521;</div>
+<h4>DAC Isolation</h4>
+<p>Each app's data directory owned by its UID with <code>drwx------</code>. Only the app (and root) can access it.</p>
+</div>
+<div class="card">
+<div class="icon">&#128737;&#65039;</div>
+<h4>SELinux MAC</h4>
+<p>Mandatory Access Control labels every file and process. Even if DAC allows, SELinux can block.</p>
+</div>
+<div class="card">
+<div class="icon">&#128260;</div>
+<h4>Seccomp-BPF</h4>
+<p>Filters syscalls per process. Apps cannot use dangerous syscalls (mount, reboot) even with root.</p>
+</div>
+</div>
+
+<div class="sim ai">
+<div class="sim-title"><span class="icon">&#129521;</span> Simulation: Sandbox Isolation in Action</div>
+<div class="sim-steps" id="sim-sandbox">
+<div class="sim-step active"><div class="num">1</div><div class="txt"><strong>App A installs:</strong> <span>Gets UID 10150. Data at /data/data/com.appA/ with drwx------</span></div></div>
+<div class="sim-step"><div class="num">2</div><div class="txt"><strong>App B installs:</strong> <span>Gets UID 10151. Data at /data/data/com.appB/ with drwx------</span></div></div>
+<div class="sim-step"><div class="num">3</div><div class="txt"><strong>App B reads App A:</strong> <span><code>open("/data/data/com.appA/db")</code> &rarr; DENIED! UID mismatch</span></div></div>
+<div class="sim-step"><div class="num">4</div><div class="txt"><strong>Even with root:</strong> <span>SELinux (enforcing) blocks based on security contexts</span></div></div>
+<div class="sim-step"><div class="num">5</div><div class="txt"><strong>Bypass attempt:</strong> <span>Content Provider must be explicitly exported + permission granted</span></div></div>
+<div class="sim-step"><div class="num">6</div><div class="txt"><strong>Defense in Depth:</strong> <span>DAC + SELinux + Seccomp = Multiple isolation layers</span></div></div>
+</div>
+<div class="sim-controls">
+<button class="sim-btn" onclick="simPrev('sim-sandbox')">&larr; Prev</button>
+<button class="sim-btn" onclick="simNext('sim-sandbox')">Next &rarr;</button>
+<button class="sim-btn" onclick="simReset('sim-sandbox')">Reset</button>
+</div>
+</div>
+
+<h3 class="ai" id="sandbox-dirs">2.3.3 &mdash; App Data Directories</h3>
+
+<div class="table-wrap ai">
+<table>
+<thead>
+<tr><th>Directory</th><th>Purpose</th><th>Root Required?</th><th>Forensic Value</th></tr>
+</thead>
+<tbody>
+<tr><td><code>/data/data/com.app/</code></td><td>Internal storage (databases, prefs, files)</td><td>Yes</td><td>&#11088;&#11088;&#11088;&#11088;&#11088;</td></tr>
+<tr><td><code>/data/app/com.app*/</code></td><td>APK installation directory</td><td>Yes</td><td>&#11088;&#11088;&#11088;&#11088;</td></tr>
+<tr><td><code>/sdcard/Android/data/com.app/</code></td><td>External storage (scoped)</td><td>No</td><td>&#11088;&#11088;&#11088;</td></tr>
+<tr><td><code>/data/system/packages.xml</code></td><td>All packages + permissions</td><td>Yes</td><td>&#11088;&#11088;&#11088;&#11088;&#11088;</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128193;</div>
+<h4>/data/data/com.app/ Contents</h4>
+<ul>
+<li><code>databases/</code> &mdash; SQLite databases</li>
+<li><code>shared_prefs/</code> &mdash; XML preference files</li>
+<li><code>files/</code> &mdash; App-specific files</li>
+<li><code>cache/</code> &mdash; Cached data</li>
+<li><code>lib/</code> &mdash; Native libraries symlink</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128269;</div>
+<h4>What to Look For (Pentesting)</h4>
+<ul>
+<li><strong>databases/*.db:</strong> User data, messages, contacts</li>
+<li><strong>shared_prefs/*.xml:</strong> Auth tokens, API keys</li>
+<li><strong>files/:</strong> Certificates, encryption keys</li>
+<li><strong>SQLite WAL:</strong> Uncommitted transactions</li>
+<li><strong>.git/.svn:</strong> Version control artifacts</li>
+</ul>
+</div>
+</div>
+
+<pre class="ai"><code><span class="comment"># List app data directory</span>
+<span class="cmd">su</span> <span class="flag">-c</span> <span class="path">"ls -la /data/data/com.target.app/"</span>
+
+<span class="comment"># Find databases</span>
+<span class="cmd">su</span> <span class="flag">-c</span> <span class="path">"find /data/data/com.target.app/ -name '*.db'"</span>
+
+<span class="comment"># Read shared preferences</span>
+<span class="cmd">su</span> <span class="flag">-c</span> <span class="path">"cat /data/data/com.target.app/shared_prefs/*.xml"</span>
+
+<span class="comment"># Extract app data</span>
+<span class="cmd">su</span> <span class="flag">-c</span> <span class="path">"tar czf /sdcard/appdata.tar.gz /data/data/com.target.app/"</span>
+<span class="cmd">adb</span> <span class="flag">pull</span> <span class="path">/sdcard/appdata.tar.gz</span></code></pre>
+
+<div class="takeaway ai">
+<h4>&#127919; Key Takeaways &mdash; Sandboxing</h4>
+<div class="takeaway-grid">
+<div class="takeaway-item"><div class="icon">&#128100;</div><div class="txt"><strong>UID = Identity</strong><span>Every app gets a unique UID. File permissions enforce isolation.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#129521;</div><div class="txt"><strong>Defense in Depth</strong><span>DAC + SELinux + Seccomp + AppOps = Multiple layers.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128230;</div><div class="txt"><strong>App Data = Goldmine</strong><span>/data/data/ has databases, prefs, and sensitive files.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#9888;&#65039;</div><div class="txt"><strong>sharedUserId = Risk</strong><span>Apps sharing UID can access each other's data.</span></div></div>
+</div>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 2.4: ADB FUNDAMENTALS -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section" id="adb">
+<div class="section-label ai">&#128295; Section 2.4</div>
+<h2 class="ai">ADB <span class="grad">Fundamentals</span></h2>
+<p class="ai">Android Debug Bridge is the essential tool for communicating with Android devices &mdash; shell access, file transfer, app management, and debugging.</p>
+
+<h3 class="ai" id="adb-overview">2.4.1 &mdash; What is ADB?</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128295;</div>
+<h4>ADB Architecture</h4>
+<ul>
+<li><strong>Client:</strong> Runs on computer (adb command)</li>
+<li><strong>Server:</strong> Background daemon (port 5037)</li>
+<li><strong>Daemon (adbd):</strong> Runs on Android device</li>
+<li><strong>Transport:</strong> USB, WiFi (TCP/IP), or wireless</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128225;</div>
+<h4>Connection Modes</h4>
+<ul>
+<li><strong>USB:</strong> Direct cable connection</li>
+<li><strong>WiFi:</strong> Same network, TCP/IP (port 5555)</li>
+<li><strong>Wireless:</strong> Android 11+ built-in</li>
+<li><strong>Default ports:</strong> Server 5037, device 5555</li>
+</ul>
+</div>
+</div>
+
+<div class="fc ai">
+<div class="fc-title">ADB Communication Architecture</div>
+<div class="fc-row"><div class="fc-box highlight">ADB Client (your PC)</div></div>
+<div class="fc-arrow-down">&darr; TCP:5037</div>
+<div class="fc-row"><div class="fc-box purple">ADB Server (daemon on PC)</div></div>
+<div class="fc-arrow-down">&darr; USB / TCP:5555</div>
+<div class="fc-row"><div class="fc-box green">adbd (daemon on device)</div></div>
+<div class="fc-arrow-down">&darr;</div>
+<div class="fc-row"><div class="fc-box red">Android OS / Shell / Apps</div></div>
+</div>
+
+<h3 class="ai" id="adb-setup">2.4.2 &mdash; Setup and Connection</h3>
+<div class="tabs ai" data-tab-group="adb-setup">
+<button class="tab-btn active" data-tab="adb-install">Installation</button>
+<button class="tab-btn" data-tab="adb-usb">USB Setup</button>
+<button class="tab-btn" data-tab="adb-wifi">WiFi Setup</button>
+</div>
+<div class="tab-content active" data-tab="adb-install">
+<pre><code><span class="comment"># Verify installation</span>
+<span class="cmd">adb</span> <span class="flag">version</span>
+<span class="comment"># Start server</span>
+<span class="cmd">adb</span> <span class="flag">start-server</span>
+<span class="comment"># List connected devices</span>
+<span class="cmd">adb</span> <span class="flag">devices</span></code></pre>
+</div>
+<div class="tab-content" data-tab="adb-usb">
+<pre><code><span class="comment"># 1. Enable Developer Options</span>
+<span class="comment">#    Settings > About Phone > Tap "Build Number" 7 times</span>
+<span class="comment"># 2. Enable USB Debugging</span>
+<span class="comment">#    Settings > Developer Options > USB Debugging ON</span>
+<span class="comment"># 3. Connect USB, allow debugging prompt</span>
+<span class="cmd">adb</span> <span class="flag">devices</span>
+<span class="comment"># If "unauthorized": Accept RSA key on device</span></code></pre>
+</div>
+<div class="tab-content" data-tab="adb-wifi">
+<pre><code><span class="comment"># WiFi ADB (via USB first)</span>
+<span class="cmd">adb</span> <span class="flag">tcpip</span> <span class="path">5555</span>
+<span class="cmd">adb</span> <span class="flag">connect</span> <span class="path">192.168.1.100:5555</span>
+<span class="comment"># Android 11+ Wireless Debugging</span>
+<span class="cmd">adb</span> <span class="flag">pair</span> <span class="path">192.168.1.100:37421</span>
+<span class="cmd">adb</span> <span class="flag">connect</span> <span class="path">192.168.1.100:43567</span></code></pre>
+</div>
+</div>
+
+<h3 class="ai" id="adb-commands">2.4.3 &mdash; Essential ADB Commands</h3>
+<div class="tabs ai" data-tab-group="adb-essential">
+<button class="tab-btn active" data-tab="adb-info">Device Info</button>
+<button class="tab-btn" data-tab="adb-files">File Transfer</button>
+<button class="tab-btn" data-tab="adb-pkgs">App Management</button>
+<button class="tab-btn" data-tab="adb-logs">Logging</button>
+</div>
+<div class="tab-content active" data-tab="adb-info">
+<pre><code><span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">getprop</span> <span class="flag">ro.product.model</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">getprop</span> <span class="flag">ro.build.version.release</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">dumpsys</span> <span class="flag">battery</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">wm</span> <span class="flag">size</span></code></pre>
+</div>
+<div class="tab-content" data-tab="adb-files">
+<pre><code><span class="cmd">adb</span> <span class="flag">pull</span> <span class="path">/sdcard/file.txt</span> <span class="path">./local/</span>
+<span class="cmd">adb</span> <span class="flag">push</span> <span class="path">./tool.sh</span> <span class="path">/data/local/tmp/</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">ls</span> <span class="flag">-la</span> <span class="path">/sdcard/</span></code></pre>
+</div>
+<div class="tab-content" data-tab="adb-pkgs">
+<pre><code><span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">pm</span> <span class="flag">list</span> <span class="flag">packages</span> <span class="flag">-3</span>
+<span class="cmd">adb</span> <span class="flag">install</span> <span class="flag">-r</span> <span class="path">app.apk</span>
+<span class="cmd">adb</span> <span class="flag">uninstall</span> <span class="path">com.target.app</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">dumpsys</span> <span class="flag">package</span> <span class="path">com.target.app</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">am</span> <span class="flag">force-stop</span> <span class="path">com.target.app</span></code></pre>
+</div>
+<div class="tab-content" data-tab="adb-logs">
+<pre><code><span class="cmd">adb</span> <span class="flag">logcat</span>
+<span class="cmd">adb</span> <span class="flag">logcat</span> <span class="flag">-s</span> <span class="path">TAG:*</span>
+<span class="cmd">adb</span> <span class="flag">logcat</span> <span class="flag">-e</span> <span class="path">"password|token|key"</span>
+<span class="cmd">adb</span> <span class="flag">logcat</span> <span class="flag">-d</span> <span class="flag">-f</span> <span class="path">/sdcard/logcat.txt</span>
+<span class="cmd">adb</span> <span class="flag">shell</span> <span class="cmd">dumpsys</span> <span class="flag">activity</span></code></pre>
+</div>
+</div>
+
+<h3 class="ai" id="adb-shell">2.4.4 &mdash; Shell Access</h3>
+<div class="grid2 ai">
+<div class="card">
+<div class="icon">&#128421;&#65039;</div>
+<h4>Shell Access Levels</h4>
+<ul>
+<li><strong>adb shell:</strong> Shell user (UID 2000)</li>
+<li><strong>adb shell su:</strong> Root shell (rooted device)</li>
+<li><strong>adb root:</strong> Restarts adbd as root (eng builds)</li>
+<li><strong>adb unroot:</strong> Restarts adbd as shell user</li>
+</ul>
+</div>
+<div class="card">
+<div class="icon">&#128737;&#65039;</div>
+<h4>Exploitation Commands</h4>
+<ul>
+<li><strong>Full backup:</strong> <code>adb backup -all -f backup.ab</code></li>
+<li><strong>Install APK:</strong> <code>adb install malware.apk</code></li>
+<li><strong>Keylogging:</strong> <code>adb shell getevent -lt</code></li>
+<li><strong>Screenshot:</strong> <code>adb shell screencap</code></li>
+</ul>
+</div>
+</div>
+
+<h3 class="ai" id="adb-labs">2.4.5 &mdash; Hands-on Labs</h3>
+
+<div class="lab ai">
+<div class="lab-num">Lab 1</div>
+<h4>Filesystem Exploration</h4>
+<div class="lab-steps">
+<div class="lab-step">Connect device: <code>adb shell</code></div>
+<div class="lab-step">List mount points: <code>ls -la /</code></div>
+<div class="lab-step">See filesystems: <code>mount | grep -E "ext4|f2fs"</code></div>
+<div class="lab-step">Check sizes: <code>df -h</code></div>
+</div>
+<div class="lab-tip">&#128161; Compare output between rooted and non-rooted devices.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 2</div>
+<h4>APK Extraction and Analysis</h4>
+<div class="lab-steps">
+<div class="lab-step">Find package: <code>adb shell pm list packages | grep banking</code></div>
+<div class="lab-step">Get path: <code>adb shell pm path com.target.app</code></div>
+<div class="lab-step">Pull APK: <code>adb pull &lt;path&gt; ./</code></div>
+<div class="lab-step">Analyze with jadx or apktool</div>
+<div class="lab-step">Check AndroidManifest.xml for exported components</div>
+</div>
+<div class="lab-tip">&#128161; Use <code>aapt dump permissions base.apk</code> for quick permission listing.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 3</div>
+<h4>Logcat Monitoring</h4>
+<div class="lab-steps">
+<div class="lab-step">Start: <code>adb logcat | grep -iE "password|token|key|secret"</code></div>
+<div class="lab-step">Use the target app features</div>
+<div class="lab-step">Monitor for leaked sensitive data</div>
+<div class="lab-step">Filter by app: <code>adb logcat --pid=$(pidof com.target.app)</code></div>
+<div class="lab-step">Export: <code>adb logcat -d > logs.txt</code></div>
+</div>
+<div class="lab-tip">&#128161; Developers often forget to remove debug logging &mdash; can leak tokens and keys!</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 4</div>
+<h4>App Data Backup Extraction</h4>
+<div class="lab-steps">
+<div class="lab-step">Check backup: <code>adb shell pm dump com.target.app | grep -i "allow backup"</code></div>
+<div class="lab-step">Backup: <code>adb backup -f target.ab -noapk com.target.app</code></div>
+<div class="lab-step">Convert: <code>java -jar abe.jar unpack target.ab target.tar</code></div>
+<div class="lab-step">Extract: <code>tar xf target.tar</code></div>
+<div class="lab-step">Analyze databases, shared_prefs, files</div>
+</div>
+<div class="lab-tip">&#128161; <code>allowBackup="false"</code> in manifest prevents data extraction.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 5</div>
+<h4>Package and Permission Audit</h4>
+<div class="lab-steps">
+<div class="lab-step">Dump: <code>adb shell dumpsys package > packages_dump.txt</code></div>
+<div class="lab-step">Find dangerous perms: <code>grep "READ_SMS" packages_dump.txt</code></div>
+<div class="lab-step">Check debuggable: <code>adb shell pm dump com.target.app | grep debuggable</code></div>
+<div class="lab-step">Find shared UIDs: <code>grep "sharedUserId" packages_dump.txt</code></div>
+</div>
+<div class="lab-tip">&#128161; Debuggable apps can be attached with JDWP debugger.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 6</div>
+<h4>Network Traffic Analysis</h4>
+<div class="lab-steps">
+<div class="lab-step">Install mitmproxy: <code>pip install mitmproxy</code></div>
+<div class="lab-step">Set proxy: <code>adb shell settings put global http_proxy IP:8080</code></div>
+<div class="lab-step">Start: <code>mitmproxy --listen-port 8080</code></div>
+<div class="lab-step">Install cert: <code>http://mitm.it</code></div>
+<div class="lab-step">Analyze target app traffic</div>
+</div>
+<div class="lab-tip">&#128161; Use Frida + objection to bypass certificate pinning.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 7</div>
+<h4>Keylogging via ADB</h4>
+<div class="lab-steps">
+<div class="lab-step">Start: <code>adb shell getevent -lt /dev/input/event2</code></div>
+<div class="lab-step">Type on device and observe raw input events</div>
+<div class="lab-step">Log: <code>adb shell getevent -lt | tee keylog.txt</code></div>
+<div class="lab-step">Decode events to reconstruct keystrokes</div>
+</div>
+<div class="lab-tip">&#128161; Captures ALL input including passwords and PINs.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 8</div>
+<h4>Screenshot and Recording</h4>
+<div class="lab-steps">
+<div class="lab-step">Screenshot: <code>adb shell screencap /sdcard/screen.png</code></div>
+<div class="lab-step">Pull: <code>adb pull /sdcard/screen.png ./</code></div>
+<div class="lab-step">Record: <code>adb shell screenrecord /sdcard/demo.mp4</code></div>
+<div class="lab-step">Stop: Ctrl+C after use (max 3 min)</div>
+<div class="lab-step">Pull video: <code>adb pull /sdcard/demo.mp4 ./</code></div>
+</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 9</div>
+<h4>Process Memory Dump</h4>
+<div class="lab-steps">
+<div class="lab-step">Find PID: <code>adb shell ps -A | grep com.target.app</code></div>
+<div class="lab-step">Maps: <code>adb shell cat /proc/PID/maps</code></div>
+<div class="lab-step">Open files: <code>adb shell ls -la /proc/PID/fd/</code></div>
+<div class="lab-step">Environment: <code>adb shell cat /proc/PID/environ | tr '\0' '\n'</code></div>
+</div>
+<div class="lab-tip">&#128161; Requires root. Look for keys, tokens, credentials in memory.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 10</div>
+<h4>SELinux Investigation</h4>
+<div class="lab-steps">
+<div class="lab-step">Status: <code>adb shell getenforce</code></div>
+<div class="lab-step">File contexts: <code>adb shell ls -Z /system/bin/</code></div>
+<div class="lab-step">Process contexts: <code>adb shell ps -eZ | grep target</code></div>
+<div class="lab-step">App contexts: <code>adb shell ls -Z /data/data/com.target.app/</code></div>
+</div>
+<div class="lab-tip">&#128161; Permissive domains allow all actions but log denials &mdash; potential bypasses.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 11</div>
+<h4>SQLite Database Extraction</h4>
+<div class="lab-steps">
+<div class="lab-step">List: <code>adb shell su -c "ls /data/data/com.target.app/databases/"</code></div>
+<div class="lab-step">Copy: <code>adb shell su -c "cp .../app.db /sdcard/"</code></div>
+<div class="lab-step">Pull: <code>adb pull /sdcard/app.db ./</code></div>
+<div class="lab-step">Analyze: <code>sqlite3 app.db ".dump"</code></div>
+<div class="lab-step">Query: <code>sqlite3 app.db "SELECT * FROM users;"</code></div>
+</div>
+<div class="lab-tip">&#128161; Also check .db-wal files for recent uncommitted data.</div>
+</div>
+
+<div class="lab ai">
+<div class="lab-num">Lab 12</div>
+<h4>Full Device Forensic Acquisition</h4>
+<div class="lab-steps">
+<div class="lab-step">Check root: <code>adb shell su -c "id"</code></div>
+<div class="lab-step">Pull /data/system: <code>adb shell su -c "tar czf /sdcard/sys.tar.gz /data/system/"</code></div>
+<div class="lab-step">Pull app data: <code>for app in /data/data/*; do tar czf /sdcard/$(basename $app).tar.gz $app; done</code></div>
+<div class="lab-step">Pull /sdcard: <code>adb pull /sdcard/ ./sdcard_backup/</code></div>
+<div class="lab-step">Dump packages: <code>adb shell su -c "cat /data/system/packages.xml"</code></div>
+</div>
+<div class="lab-tip">&#128161; Document all steps with timestamps for forensic chain of custody.</div>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- QUIZ -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section">
+<div class="section-label ai">&#129504; Knowledge Check</div>
+<h2 class="ai">Module 2 <span class="grad">Quiz</span></h2>
+
+<div class="quiz ai">
+<h4>Linux Fundamentals</h4>
+<div class="quiz-q" data-correct="2">
+<p>1. What command finds all SUID binaries?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>find / -perm -2000 -type f</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>ls -la /system/bin/</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>find / -perm -4000 -type f 2>/dev/null</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>ps -ef | grep suid</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> SUID = setuid bit (4000). These run as root and are privilege escalation vectors.</div>
+</div>
+<div class="quiz-q" data-correct="1">
+<p>2. What does oom_score_adj 900+ mean?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>Foreground app</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>Highly likely to be killed by LMK</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>Has root privileges</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>Is a system service</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> Higher score = killed first. Cached processes have 900+.</div>
+</div>
+<div class="quiz-q" data-correct="0">
+<p>3. chmod 700 means:</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>Owner: rwx, Group: ---, Others: ---</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>Everyone: r-x</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>Owner: rw-, Group: r--, Others: r--</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>Everyone: rwx</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> 7=rwx owner, 0=no access for group and others.</div>
+</div>
+</div>
+
+<div class="quiz ai">
+<h4>Filesystem and Sandboxing</h4>
+<div class="quiz-q" data-correct="2">
+<p>4. Most forensically valuable partition?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>/system</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>/cache</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>/data</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>/proc</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> /data contains all app data, databases, and user info.</div>
+</div>
+<div class="quiz-q" data-correct="3">
+<p>5. All packages and UIDs are in:</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>/system/build.prop</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>/data/app/</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>/proc/packages</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>/data/system/packages.xml</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> packages.xml is the master database for all packages, UIDs, and permissions.</div>
+</div>
+<div class="quiz-q" data-correct="0">
+<p>6. Primary isolation mechanism for app data?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>UID-based DAC file permissions</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>Application signatures</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>Network firewalls</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>Encrypted storage</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> Unique Linux UID per app + file permissions = fundamental isolation.</div>
+</div>
+</div>
+
+<div class="quiz ai">
+<h4>ADB</h4>
+<div class="quiz-q" data-correct="1">
+<p>7. ADB command to pull a file from device?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>adb push</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>adb pull</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>adb shell cp</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>adb transfer</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> <code>adb pull &lt;device_path&gt; &lt;local_path&gt;</code></div>
+</div>
+<div class="quiz-q" data-correct="2">
+<p>8. Which logcat filter finds password leaks?</p>
+<div class="quiz-opts">
+<div class="quiz-opt" data-idx="0"><div class="letter">A</div><span>adb logcat -s Password:*</span></div>
+<div class="quiz-opt" data-idx="1"><div class="letter">B</div><span>adb logcat --password</span></div>
+<div class="quiz-opt" data-idx="2"><div class="letter">C</div><span>adb logcat -e "password|Password|PASSWORD"</span></div>
+<div class="quiz-opt" data-idx="3"><div class="letter">D</div><span>adb logcat | grep password</span></div>
+</div>
+<div class="quiz-explain"><strong>Correct!</strong> <code>-e</code> uses regex filtering. Pipe to grep also works but -e is native.</div>
+</div>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- FLASHCARDS -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section">
+<div class="section-label ai">&#128218; Key Terms</div>
+<h2 class="ai">Module 2 <span class="grad">Flashcards</span></h2>
+<p class="ai">Click any card to flip and reveal the definition.</p>
+
+<div class="fc-grid ai">
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>SELinux</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Security-Enhanced Linux</strong> &mdash; Mandatory access control. Runs in enforcing mode on Android, confining processes beyond traditional DAC.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>Binder IPC</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Android's custom IPC mechanism.</strong> Replaces traditional Linux IPC. Thread-safe, synchronous with built-in UID/PID verification.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>OOM Killer / LMK</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Low Memory Killer Daemon.</strong> Android-specific OOM killer using oom_score_adj. Cached processes die first under memory pressure.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>zRAM</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Compressed RAM swap.</strong> Creates compressed swap in memory instead of slow flash storage. ~2x effective memory on Android.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>setuid (suid)</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Set User ID bit.</strong> Binary runs with file owner privileges (often root). Common privilege escalation vector.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>Seccomp-BPF</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Secure Computing mode.</strong> Filters syscalls per process. Prevents dangerous syscalls (mount, reboot) even with root.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>UID Isolation</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Unique Linux UID per app.</strong> File permissions ensure only the owning UID can access the app's data directory.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>Content Provider</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Structured data sharing.</strong> Apps must explicitly export providers. Unintentionally exported providers are common vulnerabilities.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>packages.xml</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Master package database.</strong> /data/system/packages.xml lists every package, UID, path, and granted permission. Forensic goldmine.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>ADB</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Android Debug Bridge.</strong> Tool for shell access, file transfer, app management, and debugging. Essential for security testing.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>dm-verity</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>Verified Boot.</strong> Block-level verification of /system at boot. Detects tampering. Part of Android's Verified Boot chain.</p></div>
+</div>
+</div>
+<div class="fcard" onclick="this.classList.toggle('flipped')">
+<div class="fcard-in">
+<div class="fcard-f"><h4>Project Treble</h4><p>Click to reveal</p></div>
+<div class="fcard-b"><p><strong>OEM/vendor separation.</strong> Splits /system from /vendor. Independent updates via HIDL hardware abstraction.</p></div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- FINAL TAKEAWAYS -->
+<!-- ============================================ -->
+<div class="divider"></div>
+<section class="section">
+<div class="takeaway ai">
+<h4>&#127919; Module 2 Complete &mdash; Final Summary</h4>
+<div class="takeaway-grid">
+<div class="takeaway-item"><div class="icon">&#128039;</div><div class="txt"><strong>Linux is Android's Foundation</strong><span>Kernel, processes, permissions, and memory all follow Linux conventions.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128193;</div><div class="txt"><strong>Filesystem = Attack Surface</strong><span>Each mount point has unique security properties and forensic value.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128274;</div><div class="txt"><strong>Sandboxing = UID + SELinux</strong><span>Defense in depth: DAC, MAC, and syscall filtering.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128295;</div><div class="txt"><strong>ADB = Primary Tool</strong><span>Shell, file transfer, app management, and forensic acquisition.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128270;</div><div class="txt"><strong>Audit SUID Binaries</strong><span>They run as root and are prime escalation vectors.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128202;</div><div class="txt"><strong>/proc = Live Forensics</strong><span>Memory dumps, network connections, process state in real-time.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128230;</div><div class="txt"><strong>packages.xml is Gold</strong><span>Start every investigation with this master package database.</span></div></div>
+<div class="takeaway-item"><div class="icon">&#128161;</div><div class="txt"><strong>Practice the Labs</strong><span>Hands-on ADB experience is essential for mastery.</span></div></div>
+</div>
+</div>
+
+<div style="text-align:center;margin-top:3rem" class="ai">
+<p style="color:var(--text3);margin-bottom:1rem">Module 2 Complete</p>
+<a href="android-fundamentals.html" class="btn btn-outline">&larr; Back to Module 1</a>
+<a href="android-architecture.html" class="btn btn-outline">Next: Module 3 &rarr;</a>
+</div>
+</section>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+// Simulation navigation
+function simNext(id){var c=document.getElementById(id);if(!c)return;var s=c.querySelectorAll('.sim-step');var a=-1;s.forEach(function(x,i){if(x.classList.contains('active'))a=i});s.forEach(function(x){x.classList.remove('active')});var n=(a+1)%s.length;s[n].classList.add('active')}
+function simPrev(id){var c=document.getElementById(id);if(!c)return;var s=c.querySelectorAll('.sim-step');var a=-1;s.forEach(function(x,i){if(x.classList.contains('active'))a=i});s.forEach(function(x){x.classList.remove('active')});var n=(a-1+s.length)%s.length;s[n].classList.add('active')}
+function simReset(id){var c=document.getElementById(id);if(!c)return;var s=c.querySelectorAll('.sim-step');s.forEach(function(x){x.classList.remove('active')});if(s[0])s[0].classList.add('active')}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+btn.addEventListener('click',function(){
+var group=this.getAttribute('data-tab-group');
+var tab=this.getAttribute('data-tab');
+var parent=this.closest('.section')||document;
+parent.querySelectorAll('.tab-btn[data-tab-group="'+group+'"]').forEach(function(b){b.classList.remove('active')});
+this.classList.add('active');
+parent.querySelectorAll('.tab-content[data-tab]').forEach(function(tc){
+var keys=tc.getAttribute('data-tab').split(',');
+if(keys.indexOf(tab)!==-1||tc.getAttribute('data-tab')===tab){
+tc.classList.add('active');
+}else{
+tc.classList.remove('active');
+}
+});
+});
+});
+
+// Quiz functionality
+document.querySelectorAll('.quiz-q').forEach(function(q){
+var correct=parseInt(q.getAttribute('data-correct'));
+var opts=q.querySelectorAll('.quiz-opt');
+var explain=q.querySelector('.quiz-explain');
+var answered=false;
+opts.forEach(function(opt){
+opt.addEventListener('click',function(){
+if(answered)return;
+answered=true;
+var idx=parseInt(this.getAttribute('data-idx'));
+opts.forEach(function(o){o.classList.remove('selected','correct','wrong')});
+if(idx===correct){
+this.classList.add('correct');
+if(explain)explain.classList.add('show');
+}else{
+this.classList.add('wrong');
+opts[correct].classList.add('correct');
+if(explain)explain.classList.add('show');
+}
+});
+});
+});
+
+// Animate elements on scroll
+function checkVisible(){
+document.querySelectorAll('.ai').forEach(function(el){
+var rect=el.getBoundingClientRect();
+var h=window.innerHeight;
+if(rect.top<h*0.92){
+el.classList.add('vis');
+}
+});
+}
+window.addEventListener('scroll',checkVisible);
+window.addEventListener('resize',checkVisible);
+
+// Fallback: ensure all .ai elements become visible
+document.addEventListener('DOMContentLoaded',function(){
+checkVisible();
+setTimeout(checkVisible,500);
+setTimeout(checkVisible,1500);
+});
+window.addEventListener('load',function(){
+checkVisible();
+setTimeout(checkVisible,1000);
+});
+</script>
+
+<noscript><style>.ai{opacity:1!important;transform:none!important}</style></noscript>
+</body>
+</html>
